@@ -20,7 +20,7 @@ golem::fill_desc(
   author_first_name = "Travis", # Your First Name
   author_last_name = "Hinkelman", # Your Last Name
   author_email = "travis.hinkelman@fishsciences.net", # Your Email
-  repo_url = NULL # The URL of the GitHub Repo (optional) 
+  repo_url = "https://github.com/fishsciences/DSM2VizTool" # The URL of the GitHub Repo (optional) 
 )     
 
 ## Set {golem} options ----
@@ -28,7 +28,7 @@ golem::set_golem_options()
 
 ## Create Common Files ----
 ## See ?usethis for more information
-usethis::use_mit_license( name = "Golem User" )  # You can set another license here
+usethis::use_mit_license( name = "Travis Hinkelman" )  # You can set another license here
 usethis::use_readme_rmd( open = FALSE )
 usethis::use_code_of_conduct()
 usethis::use_lifecycle_badge( "Experimental" )

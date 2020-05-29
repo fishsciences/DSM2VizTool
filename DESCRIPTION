@@ -18,3 +18,5 @@ LazyData: true
 RoxygenNote: 6.1.1
 Suggests: 
     testthat
+URL: https://github.com/fishsciences/DSM2VizTool
+BugReports: https://github.com/fishsciences/DSM2VizTool/issues
