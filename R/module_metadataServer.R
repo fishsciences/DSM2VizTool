@@ -283,7 +283,8 @@ metadataServer <-  function(input, output, session){
       x = channels
     }else{
       x = channelTibbleWide() %>% 
-        filter(Total == length(intervalSub()[["scenario"]]) + 1) %>% # filter to keep channels that are found in all scenarios and default map
+        # filter to keep channels that are found in all scenarios and default map
+        filter(Total == length(intervalSub()[["scenario"]]) + 1) %>% 
         pull(Channel)
     }
     return(x) 
@@ -293,12 +294,11 @@ metadataServer <-  function(input, output, session){
   
   nodeList <- reactive({
     req(rv[["H5"]])
-    out = list()
-    for (i in 1:nrow(rv[["H5"]])){
-      out[[rv[["H5"]]$scenario[i]]] = tibble(NodeLoc = process_nodes(rhdf5::h5read(rv[["H5"]]$datapath[i], "/hydro/geometry/channel_location")),
-                                             Index = 1:length(NodeLoc))
-    }
-    return(out)
+    out <- lapply(rv[["H5"]][["datapath"]], function(file)
+      tibble(NodeLoc = rhdf5::h5read(file, "/hydro/geometry/channel_location"),
+             Index = 1:length(NodeLoc))) 
+    names(out) <- rv[["H5"]][["scenario"]]
+    out
   })
   
   # read data ----------------------------------------------------------------
