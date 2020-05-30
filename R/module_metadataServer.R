@@ -165,15 +165,14 @@ metadataServer <-  function(input, output, session){
   # dates ----------------------------------------------------------------
   
   datesListRead <- reactive({
-    d = h5Metadata()
-    out = list()
-    for (i in 1:nrow(d)){
-      out[[d[["scenario"]][i]]] = tibble(Date = seq(from = d[["start_date"]][i], to = d[["end_date"]][i], 
-                                                    by = paste(d[["interval_vals"]][i], d[["interval_units"]][i])),
-                                         Index = get_date_indexes(d[["start_date"]][i], d[["start_date"]][i], d[["end_date"]][i],
-                                                                  d[["interval_vals"]][i], d[["interval_units"]][i]))
-    }
-    return(out)
+    h5_df = h5Metadata()
+    out <- mapply(function(start, end, val, unit)
+      tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
+             Index = get_date_indexes(start, start, end, val, unit)),
+      h5_df[["start_date"]], h5_df[["end_date"]], h5_df[["interval_vals"]], h5_df[["interval_units"]],
+      SIMPLIFY = FALSE)
+    names(out) <- h5_df[["scenario"]]
+    out
   })
   
   datesListReadSub <- reactive({
