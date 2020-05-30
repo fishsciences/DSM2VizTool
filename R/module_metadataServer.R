@@ -175,16 +175,27 @@ metadataServer <-  function(input, output, session){
     out
   })
   
+  # datesListReadSub <- reactive({
+  #   drr = lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
+  #   dlr = datesListRead()
+  #   out = list()
+  #   for (i in names(dlr)){
+  #     out[[i]] = filter(dlr[[i]], Date >= drr[1] & Date <= drr[2])
+  #     # After reading data, the original index will be lost; need new index for subsetting data in visualization step 
+  #     out[[i]][["SubIndex"]] = if (nrow(out[[i]]) > 0) 1:length(out[[i]][["Date"]]) else NULL 
+  #   }
+  #   return(out)
+  # })
+  
   datesListReadSub <- reactive({
     drr = lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
-    dlr = datesListRead()
-    out = list()
-    for (i in names(dlr)){
-      out[[i]] = filter(dlr[[i]], Date >= drr[1] & Date <= drr[2])
-      # After reading data, the original index will be lost; need new index for subsetting data in visualization step 
-      out[[i]][["SubIndex"]] = if (nrow(out[[i]]) > 0) 1:length(out[[i]][["Date"]]) else NULL 
-    }
-    return(out)
+    out <- lapply(datesListRead(),
+                  function(df){
+                    tmp <- filter(df, Date >= drr[1] & Date <= drr[2])
+                    tmp[["SubIndex"]] <- if (nrow(tmp) > 0) 1:nrow(tmp) else NULL 
+                    tmp
+                  })
+    out
   })
   
   # intervals ----------------------------------------------------------------
@@ -232,7 +243,8 @@ metadataServer <-  function(input, output, session){
   
   observe({
     req(rv[["H5"]])
-    cond = max(intervals()[["num_intervals_in_range"]]) > 35040 # threshold based on 1 year of 15-min intervals; b/c warning message advises selecting less than one year
+    # threshold based on 1 year of 15-min intervals; b/c warning message advises selecting less than one year
+    cond = max(intervals()[["num_intervals_in_range"]]) > 35040 
     shinyjs::toggle("date_range_read_warn_large", condition = cond)
   })
   
