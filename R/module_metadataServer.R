@@ -33,11 +33,18 @@ metadataServer <-  function(input, output, session){
     # loop through selected files to read selected data in load data step
     # loads only one of two nodes (upstream or downstream); all common channels; and selected date range (input$date_range_load)
     out = list()
-    sc = names(dates) # scenarios are stored in list names; dates reflects only scenarios with valid value
+    # scenarios are stored in list names; dates reflects only scenarios with valid value
+    sc = names(dates) 
+    # decided not to switch this for loop to mapply 
+    # because didn't want to risk (or spend time confirming)
+    # that input vectors/lists would be in same order after filtering
     for (i in sc){
       dp = data[["datapath"]][data[["scenario"]] == i]
       out[[i]] = rhdf5::h5read(dp, paste0("/hydro", name),
-                               index = list(node[[i]][["Index"]], channels[[i]][["Index"]], dates[[i]][["Index"]]))  # nodes, channels, dates for order of index; NULL indicates load all
+                               # nodes, channels, dates for order of index; NULL indicates load all
+                               index = list(node[[i]][["Index"]], 
+                                            channels[[i]][["Index"]], 
+                                            dates[[i]][["Index"]])) 
     }
     return(out)
   }
@@ -304,26 +311,31 @@ metadataServer <-  function(input, output, session){
   # read data ----------------------------------------------------------------
   
   observeEvent(input[["read_data"]],{
-    rv[["H5META"]] = rv[["STAGE"]] = rv[["FLOW"]] = rv[["AREA"]] = rv[["VELOCITY"]] = rv[["DLRS"]] = rv[["DRR"]] = rv[["CL"]] = rv[["ACC"]] = NULL # clear out previous results
+    # clear out values from previous reads
+    rv[["H5META"]] <- rv[["STAGE"]] <- rv[["FLOW"]] <- rv[["AREA"]] <-  
+      rv[["VELOCITY"]] <- rv[["DLRS"]] <- rv[["DRR"]] <- rv[["CL"]] <- rv[["ACC"]] <- NULL
     
-    rv[["H5META"]] = h5Metadata()
-    rv[["DLRS"]] = datesListReadSub() 
-    rv[["DRR"]] = input[["date_range_read"]]
-    rv[["ACC"]] = allCommonChannels()
-    rv[["CL"]] = lapply(channelList(), filter, Channel %in% rv[["ACC"]])
-    nl = lapply(nodeList(), filter, NodeLoc == input[["node_loc"]]) # don't need to store in rv because only two options; once one is selected don't need to track any more
+    rv[["H5META"]] <- h5Metadata()
+    rv[["DLRS"]] <- datesListReadSub() 
+    rv[["DRR"]] <- input[["date_range_read"]]
+    rv[["ACC"]] <- allCommonChannels()
+    rv[["CL"]] <- lapply(channelList(), filter, Channel %in% rv[["ACC"]])
+    # don't need to store in rv because only two options; once one is selected don't need to track any more
+    nl = lapply(nodeList(), filter, NodeLoc == input[["node_loc"]]) 
     
     withProgress(message = 'Reading...', value = 0, detail = "Stage",{
-      rv[["STAGE"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel stage")
+      rv[["STAGE"]] <- h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel stage")
+      
       setProgress(2.5/10, detail = "Flow")
-      rv[["FLOW"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel flow")
+      rv[["FLOW"]] <- h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel flow")
+      
       setProgress(5/10, detail = "Area")
-      rv[["AREA"]] = h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel area")
+      rv[["AREA"]] <- h5_read(rv[["H5"]], nl, rv[["CL"]], rv[["DLRS"]], "/data/channel area")
+      
       setProgress(7.5/10, message = "Calculating...", detail = "Velocity")
-      rv[["VELOCITY"]] = list()
-      for (i in names(rv[["FLOW"]])){
-        rv[["VELOCITY"]][[i]] = rv[["FLOW"]][[i]]/rv[["AREA"]][[i]]
-      }
+      rv[["VELOCITY"]] <- mapply(function(flow, area) flow/area,
+                                 rv[["FLOW"]], rv[["AREA"]], SIMPLIFY = FALSE)
+      
       setProgress(9.5/10, message = "Finishing", detail = "")
     })
     rhdf5::h5closeAll()
