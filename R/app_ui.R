@@ -9,8 +9,13 @@ app_ui <- function(request) {
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # List the first level UI elements here 
-    fluidPage(
-      h1("DSM2VizTool")
+    navbarPage(
+      "DSM2 HYDRO Visualization Tool",
+      id = "nav_tabs",
+      tabPanel("Metadata", DSM2VizTool::metadataUI("metadataUI")),
+      tabPanel("Time Series"),
+      tabPanel("Comparative"),
+      tabPanel("About")
     )
   )
 }
@@ -28,15 +33,18 @@ golem_add_external_resources <- function(){
   add_resource_path(
     'www', app_sys('app/www')
   )
- 
+  
   tags$head(
     favicon(),
     bundle_resources(
       path = app_sys('app/www'),
       app_title = 'DSM2VizTool'
-    )
+    ),
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert() 
+    shinyjs::useShinyjs(),
+    shinyWidgets::useSweetAlert(),
+    shinybusy::add_busy_bar(color = "#919191")
   )
 }
 
