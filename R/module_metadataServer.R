@@ -243,17 +243,17 @@ metadataServer <-  function(input, output, session){
   
   channelList <- reactive({
     req(rv[["H5"]])
-    out = list()
-    for (i in 1:nrow(rv[["H5"]])){
-      out[[rv[["H5"]]$scenario[i]]] = tibble(Channel = rhdf5::h5read(rv[["H5"]]$datapath[i], "/hydro/geometry/channel_number"),
-                                             Index = 1:length(Channel))
-    }
-    return(out)
+    out <- lapply(rv[["H5"]][["datapath"]], function(file)
+      tibble(Channel = rhdf5::h5read(file, "/hydro/geometry/channel_number"),
+             Index = 1:length(Channel))) 
+    names(out) <- rv[["H5"]][["scenario"]]
+    out
   })
   
   channelTibble <- reactive({
     bind_rows(channelList(), .id = "Scenario") %>% 
-      filter(Scenario %in% intervalSub()[["scenario"]]) # exclude scenarios that will be dropped when reading data (b/c not enough data)
+      # exclude scenarios that will be dropped when reading data (b/c not enough data)
+      filter(Scenario %in% intervalSub()[["scenario"]]) 
   })
   
   channelTibbleWide <- reactive({
@@ -266,15 +266,16 @@ metadataServer <-  function(input, output, session){
   })
   
   output$channelTable <- DT::renderDT({
-    sc = intervalSub()[["scenario"]]
-    ctw = channelTibbleWide() %>% 
+    sc <- intervalSub()[["scenario"]]
+    channelTibbleWide() %>% 
       filter(Total < length(sc) + 1) %>% 
-      select(c("Channel", "Default Map" = "DefaultMap", sc)) # sorting columns so that Default is always the 2nd column; Channel will always be first because of spread
-    ctw}, 
-    style = "bootstrap", rownames = FALSE,
-    caption = "Table 3. Differences in channels included in default map file and selected HDF5 files with at least 2 time intervals in the date range (see Table 2). 
+      # re-arranging columns so that Default is always the 2nd column; Channel will always be first because of spread
+      select(c("Channel", "Default Map" = "DefaultMap", sc)) 
+  }, 
+  style = "bootstrap", rownames = FALSE,
+  caption = "Table 3. Differences in channels included in default map file and selected HDF5 files with at least 2 time intervals in the date range (see Table 2). 
     1 and 0 indicate that channels are present or not present in a file, respectively. A table with no data indicates that all files have the same channels.",
-    options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
+  options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
   )
   
   allCommonChannels <- reactive({
