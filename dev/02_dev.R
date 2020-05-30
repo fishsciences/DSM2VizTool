@@ -23,6 +23,10 @@ usethis::use_package( "shinyFiles" )
 usethis::use_package( "shinybusy" )
 usethis::use_package( "fs" )
 usethis::use_package( "lubridate" )
+usethis::use_package( "dplyr" )
+usethis::use_package( "ggplot2" )
+usethis::use_package( "tidyr" )
+usethis::use_package( "rgdal" )
 
 ## Add modules ----
 ## Create a module infrastructure in R/

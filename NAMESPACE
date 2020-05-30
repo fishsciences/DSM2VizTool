@@ -3,6 +3,7 @@
 export(metadataServer)
 export(metadataUI)
 export(run_app)
+import(dplyr)
 import(shiny)
 importFrom(config,get)
 importFrom(golem,activate_js)
