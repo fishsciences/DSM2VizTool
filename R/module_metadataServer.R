@@ -65,7 +65,9 @@ metadataServer <-  function(input, output, session){
     # find the number of intervals in a date range
     # need plural interval_units for difftime
     interval_units <- paste0(interval_units, "s")
-    1L + as.integer(difftime(end, start, units = interval_units))/interval_vals
+    mapply(function(start, end, val, unit)
+      1L + as.integer(difftime(end, start, unit))/val,
+      start, end, interval_vals, interval_units)
   }
   
   get_date_indexes <- function(start, end, interval_vals, interval_units) {
@@ -157,24 +159,23 @@ metadataServer <-  function(input, output, session){
   # intervals ----------------------------------------------------------------
   
   intervals <- reactive({
-    d = h5Metadata()
-    drr = lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
-    for (i in 1:nrow(d)){
-      first_date = if_else(d[["start_date"]][i] > drr[1], d[["start_date"]][i], drr[1])
-      last_date = if_else(d[["end_date"]][i] < drr[2], d[["end_date"]][i], drr[2])
-      int_num = get_interval_number(first_date, last_date, d[["interval_vals"]][i], d[["interval_units"]][i])
-      d[["num_intervals_in_range"]][i] = ifelse(int_num < 0, 0, int_num)
-    }
-    return(d)
+    h5_df <- h5Metadata()
+    drr <- lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
+    tmp <- h5_df %>% 
+      mutate(first_date = if_else(start_date > drr[1], start_date, drr[1]),
+             last_date = if_else(end_date < drr[2], end_date, drr[2]),
+             int_num = get_interval_number(first_date, last_date, interval_vals, interval_units),
+             num_intervals_in_range = ifelse(int_num < 0, 0, int_num))
+    h5_df[["num_intervals_in_range"]] <- tmp[["num_intervals_in_range"]]
+    h5_df
   })
   
   intervalSub <- reactive({
-    intervals() %>% filter(num_intervals_in_range > 1)
+     filter(intervals(), num_intervals_in_range > 1)
   })
   
   output$intervalTable = DT::renderDT({
-    intervals() %>% 
-      select(Scenario = scenario, `Total Intervals` = num_intervals, `Intervals in Date Range` = num_intervals_in_range)},
+    select(intervals(), Scenario = scenario, `Total Intervals` = num_intervals, `Intervals in Date Range` = num_intervals_in_range)},
     style = "bootstrap", rownames = FALSE, caption = "Table 2. Number of time intervals in selected HDF5 files.",
     options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
   )
