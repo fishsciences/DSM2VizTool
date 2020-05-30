@@ -175,18 +175,6 @@ metadataServer <-  function(input, output, session){
     out
   })
   
-  # datesListReadSub <- reactive({
-  #   drr = lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
-  #   dlr = datesListRead()
-  #   out = list()
-  #   for (i in names(dlr)){
-  #     out[[i]] = filter(dlr[[i]], Date >= drr[1] & Date <= drr[2])
-  #     # After reading data, the original index will be lost; need new index for subsetting data in visualization step 
-  #     out[[i]][["SubIndex"]] = if (nrow(out[[i]]) > 0) 1:length(out[[i]][["Date"]]) else NULL 
-  #   }
-  #   return(out)
-  # })
-  
   datesListReadSub <- reactive({
     drr = lubridate::ymd_hms(paste(input[["date_range_read"]], c("00:00:00", "23:59:59")))
     out <- lapply(datesListRead(),

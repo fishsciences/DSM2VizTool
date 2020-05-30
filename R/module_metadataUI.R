@@ -10,10 +10,11 @@ metadataUI <- function(id){
   tagList(
     sidebarLayout(
       sidebarPanel(
+        tags$style(HTML("hr {border-top: 1px solid #b5b5b5;}")),
         p(align = "center", 
           shinyjs::hidden(
             actionButton(
-              inputId = "reset_app",
+              inputId = ns("reset_app"),
               label = "Reset Application",
               icon = icon("redo"),
               onclick = "history.go(0)"
