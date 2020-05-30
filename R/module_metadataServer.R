@@ -68,17 +68,12 @@ metadataServer <-  function(input, output, session){
     1L + as.integer(difftime(end, start, units = interval_units))/interval_vals
   }
   
-  get_date_indexes <- function(start_date, date_range_start, date_range_end, 
-                               interval_vals, interval_units) {
-    # get index of dates relative to start_date time interval
-    # used to index into full HDF5 files when only using a subset of dates
+  get_date_indexes <- function(start, end, interval_vals, interval_units) {
     # need plural interval_units for difftime
     interval_units <- paste0(interval_units, "s")
-    diff_drs <- as.integer(difftime(date_range_start, start_date, units = interval_units))
-    diff_dre <- as.integer(difftime(date_range_end, start_date, units = interval_units))
-    index_start = 1L + diff_drs/interval_vals
-    index_end = 1L + diff_dre/interval_vals
-    return(seq(index_start, index_end, 1))
+    diff_dates <- as.integer(difftime(end, start, units = interval_units))
+    index_end = 1L + diff_dates/interval_vals
+    1:index_end
   }
   
   process_nodes <- function(x){
@@ -135,40 +130,13 @@ metadataServer <-  function(input, output, session){
   options = list(searching = FALSE, bPaginate = FALSE, info = FALSE, scrollX = TRUE)
   )
   
-  get_date_indexes <- function(start_date, date_range_start, date_range_end, 
-                               interval_vals, interval_units) {
-    # get index of dates relative to start_date time interval
-    # used to index into full HDF5 files when only using a subset of dates
-    # need plural interval_units for difftime
-    interval_units <- paste0(interval_units, "s")
-    diff_drs <- as.integer(difftime(date_range_start, start_date, units = interval_units))
-    diff_dre <- as.integer(difftime(date_range_end, start_date, units = interval_units))
-    index_start = 1L + diff_drs/interval_vals
-    index_end = 1L + diff_dre/interval_vals
-    return(seq(index_start, index_end, 1))
-  }
-  
-  process_nodes <- function(x){
-    x = gsub(pattern = " ", replacement = "", x) # node locations (upstream and downstream) included whitespace 
-    x = sapply(x, simple_cap, USE.NAMES = FALSE) # first letter capitalized to match input in ui.R
-    return(x)
-  }
-  
-  simple_cap <- function(x) {
-    # used in process_nodes()
-    # ?toupper
-    s <- strsplit(x, " ")[[1]]
-    paste(toupper(substring(s, 1, 1)), substring(s, 2),
-          sep = "", collapse = " ")
-  }
-  
   # dates ----------------------------------------------------------------
   
   datesListRead <- reactive({
     h5_df = h5Metadata()
     out <- mapply(function(start, end, val, unit)
       tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
-             Index = get_date_indexes(start, start, end, val, unit)),
+             Index = get_date_indexes(start, end, val, unit)),
       h5_df[["start_date"]], h5_df[["end_date"]], h5_df[["interval_vals"]], h5_df[["interval_units"]],
       SIMPLIFY = FALSE)
     names(out) <- h5_df[["scenario"]]
