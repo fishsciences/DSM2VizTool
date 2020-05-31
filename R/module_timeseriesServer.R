@@ -45,36 +45,37 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   response_list <- function(response, dates){
     # additional date filtering after loading data (input$date_range_viz)
-    out = list() 
-    for (i in names(response)){
-      out[[i]] = response[[i]][,,dates[[i]][["SubIndex"]], drop = FALSE] # only one dimension for node at this point in the process
-    }
-    return(out)
+    # selecting all channels; only one dimension for node at this point in the process
+    mapply(function(response, dates)
+      response[,,dates[["SubIndex"]], drop = FALSE],
+      response, dates,
+      SIMPLIFY = FALSE)
   }
   
   response_tibble <- function(response, dates, channels, focal_channel){
     # convert response list to tibble for selected focal channel
     # used in plotting time series
     # response, dates, and channels, are all lists with one tibble per scenario (i.e., user uploaded file)
-    out = list() 
-    for (i in names(response)){
-      ci = filter(channels[[i]], Channel == focal_channel)[["Index"]]
-      out[[i]] = tibble(Date = dates[[i]][["Date"]],
-                        Value = response[[i]][,ci,])
-    }
+    out <- mapply(
+      function(response, dates, channels){
+        ci <- channels[["Index"]][channels[["Channel"]] == focal_channel]
+        tibble(Date = dates[["Date"]],
+               Value = response[, ci, , drop = TRUE])},
+      response, dates, channels,
+      SIMPLIFY = FALSE)
+    
     bind_rows(out, .id = "Scenario")
   }
   
   ts_plot <- function(data, y.lab, title, obs.check){
     # plot time series
     if (obs.check == FALSE) return(NULL)
-    p <- ggplot(data, aes(x = Date, y = Value, col = Scenario)) +
+    ggplot(data, aes(x = Date, y = Value, col = Scenario)) +
       geom_line(size = 1, alpha = 0.6) +
       labs(y = y.lab, title = title) +
       scale_colour_brewer(type = "qual", palette = "Set1") +
       theme_minimal() +
       theme_mod
-    return(p)
   }
   
   # dates  ----------------------------------------------------------------
@@ -127,9 +128,9 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   output$tsFlowPlot = renderPlot({
     req(metadata_rv[["FLOW"]])
-    d = response_tibble(flowList(), datesList(), metadata_rv[["CL"]], input[["ts_channel"]]) %>% 
-      filter(Scenario %in% input[["sel_scenarios"]])
-    ts_plot(d, "Flow (cfs)", "Flow", obsCheck())
+    response_tibble(flowList(), datesList(), metadata_rv[["CL"]], input[["ts_channel"]]) %>% 
+      filter(Scenario %in% input[["sel_scenarios"]]) %>% 
+      ts_plot("Flow (cfs)", "Flow", obsCheck())
   })
   
   # stage  ----------------------------------------------------------------
@@ -141,9 +142,9 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   output$tsStagePlot = renderPlot({
     req(metadata_rv[["STAGE"]])
-    d = response_tibble(stageList(), datesList(), metadata_rv[["CL"]], input[["ts_channel"]]) %>% 
-      filter(Scenario %in% input[["sel_scenarios"]])
-    ts_plot(d, "Stage (ft)", "Stage", obsCheck())
+    response_tibble(stageList(), datesList(), metadata_rv[["CL"]], input[["ts_channel"]]) %>% 
+      filter(Scenario %in% input[["sel_scenarios"]]) %>% 
+    ts_plot("Stage (ft)", "Stage", obsCheck())
   })
   
   # dynamic UI ----------------------------------------------------------------
