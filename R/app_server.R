@@ -12,6 +12,7 @@ app_server <- function( input, output, session ) {
   #                      AD = NULL, PO = NULL, DN = NULL, SS = NULL, B = NULL, NB = NULL, DC = NULL) 
   
   # List the first level callModules here
-  callModule(DSM2VizTool::metadataServer, "metadataUI")
+  # https://stackoverflow.com/questions/46075184/scoping-issue-with-updatenavbarpage-function-from-within-shiny-module
+  callModule(DSM2VizTool::metadataServer, "metadataUI", x = session)
 
 }

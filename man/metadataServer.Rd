@@ -4,7 +4,7 @@
 \alias{metadataServer}
 \title{metadataServer}
 \usage{
-metadataServer(input, output, session)
+metadataServer(input, output, session, x)
 }
 \arguments{
 \item{input}{module}

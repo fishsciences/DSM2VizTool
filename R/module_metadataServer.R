@@ -9,10 +9,41 @@
 #'
 #'
 
-metadataServer <-  function(input, output, session){
+metadataServer <-  function(input, output, session, x){
+  
   # reactive values ----------------------------------------------------------------
   # dlwy = date list water year; drr = date range read; cl = channel list; acc = all common channels
-  rv <- reactiveValues(H5 = NULL, H5META = NULL, STAGE = NULL, FLOW = NULL, AREA = NULL, VELOCITY = NULL, DLWY = NULL, DRR = NULL, CL = NULL, ACC = NULL)
+  rv <- reactiveValues(H5 = NULL, H5META = NULL, STAGE = NULL, FLOW = NULL, AREA = NULL, 
+                       VELOCITY = NULL, DLWY = NULL, DRR = NULL, CL = NULL, ACC = NULL)
+  
+  # info button ----------------------------------------------------------------
+  
+  observeEvent(input[["metadata_info"]], {
+    shinyWidgets::sendSweetAlert(
+      session = session,
+      title = "",             
+      text = 
+        tags$span(
+          tags$p(align="left",
+                 "Selecting HDF5 files reads the metadata (but not data) for each selected file and populates the Metadata tab with 
+                   tables related to the start and end dates, time intervals, and channels included in the selected files."
+          ),
+          tags$p(align="left",
+                 "Because the HDF5 files might contain large amounts of data, the user can select a date range 
+                   (based on the file metadata) to read a subset of the file to reduce the time that DSM2 Viz spends 
+                   reading data. The app also requires that the user selects the upstream or downstream node for each 
+                   channel. We have created an ", tags$a(href="https://fishsciences.shinyapps.io/dsm2-map/", "interactive map"), " showing DSM2 
+                   channels and nodes, including the upstream and downstream node."
+          ),
+          tags$p(align="left",
+                 "Click the 'Read Data' button to read the specified subset of the stage, flow, and channel 
+                   area output; velocity is calculated by dividing flow by channel area."
+          )
+        ),
+      type = "info",
+      btn_labels = "OK"
+    )
+  })
   
   # helper functions ----------------------------------------------------------------
   
@@ -65,9 +96,11 @@ metadataServer <-  function(input, output, session){
     # find the number of intervals in a date range
     # need plural interval_units for difftime
     interval_units <- paste0(interval_units, "s")
-    mapply(function(start, end, val, unit)
-      1L + as.integer(difftime(end, start, unit))/val,
-      start, end, interval_vals, interval_units)
+    do.call("c", 
+            mapply(function(start, end, val, units)
+              1L + as.integer(difftime(end, start, units = units))/val,
+              start, end, interval_vals, interval_units,
+              SIMPLIFY = FALSE))
   }
   
   get_date_indexes <- function(start, end, interval_vals, interval_units) {
@@ -171,7 +204,7 @@ metadataServer <-  function(input, output, session){
   })
   
   intervalSub <- reactive({
-     filter(intervals(), num_intervals_in_range > 1)
+    filter(intervals(), num_intervals_in_range > 1)
   })
   
   output$intervalTable = DT::renderDT({
@@ -307,6 +340,9 @@ metadataServer <-  function(input, output, session){
       setProgress(9.5/10, message = "Finishing", detail = "")
     })
     rhdf5::h5closeAll()
-    updateTabsetPanel(session, "explore_tabs", selected = "Time Series") # change tab after clicking on process output button
-  })#/Read Button
+    # https://stackoverflow.com/questions/46075184/scoping-issue-with-updatenavbarpage-function-from-within-shiny-module
+    updateNavbarPage(x, "nav_tabs", selected = "Time Series")
+  })
+  
+  return(rv)
 }

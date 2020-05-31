@@ -63,12 +63,15 @@ metadataUI <- function(id){
         br(),
         p(align = "center", shinyjs::hidden(actionButton(inputId = ns("read_data"), label = "Read Data", icon = icon("spinner")))),
         shinyjs::hidden(helpText(id = ns("date_range_read_warn_large"),
-                                 "Warning: Date range includes large number of intervals (see Table 2); reading data will be slow and may run out of memory. 
-                          It is recommended to select less than one year of data because differences between scenarios are likely to be swamped by seasonal and annual variation."))
+                                 "Warning: Date range includes large number of intervals (see Table 2); 
+                                 reading data will be slow and may run out of memory. It is recommended to 
+                                 select less than one year of data because differences between scenarios are 
+                                 likely to be swamped by seasonal and annual variation."))
       ),
       mainPanel(
         br(),
-        p(id = ns("metadata_msg"), "Select HDF5 files of DSM2 HYDRO output to view metadata. Example HDF5 files are available to download by clicking on the blue download button."),
+        p(id = ns("metadata_msg"), br("Select HDF5 files produced by DSM2 HYDRO to view file metadata and read data. 
+                                      Example HDF5 files are available to download by clicking on the blue download button.")),
         DT::DTOutput(ns("metadataTable")),
         br(),
         DT::DTOutput(ns("intervalTable")),
@@ -76,7 +79,13 @@ metadataUI <- function(id){
         DT::DTOutput(ns("channelTable")),
         br()
       )
-    )
+    ),
+    # * info button -----------------------------------------------------
+    absolutePanel(
+      top = 65, right = 40, style = "opacity: 0.95;",
+      shinyWidgets::actionBttn(
+        ns("metadata_info"), "", icon("info"),
+        style = "material-circle", size = "sm"))
   )
 }
 
