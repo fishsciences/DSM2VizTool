@@ -13,7 +13,7 @@ app_ui <- function(request) {
       "DSM2 HYDRO Visualization Tool",
       id = "nav_tabs",
       tabPanel("Metadata", DSM2VizTool::metadataUI("metadataUI")),
-      tabPanel("Time Series"),
+      tabPanel("Time Series", DSM2VizTool::timeseriesUI("timeseriesUI")),
       tabPanel("Comparative"),
       tabPanel("About")
     )

@@ -1,8 +1,9 @@
 #' metadataServer
 #'
-#' @param input module
-#' @param output module
-#' @param session module
+#' @param input     module
+#' @param output    module
+#' @param session   module
+#' @param x         used to separately pass session to updateNavBarPage
 #'
 #' @import dplyr
 #' @export
@@ -12,11 +13,11 @@
 metadataServer <-  function(input, output, session, x){
   
   # reactive values ----------------------------------------------------------------
-  # dlwy = date list water year; drr = date range read; cl = channel list; acc = all common channels
+  # dlrs = date list read sub; drr = date range read; cl = channel list; acc = all common channels
   rv <- reactiveValues(H5 = NULL, H5META = NULL, STAGE = NULL, FLOW = NULL, AREA = NULL, 
-                       VELOCITY = NULL, DLWY = NULL, DRR = NULL, CL = NULL, ACC = NULL)
+                       VELOCITY = NULL, DLRS = NULL, DRR = NULL, CL = NULL, ACC = NULL)
   
-  # info button ----------------------------------------------------------------
+  # info alert ----------------------------------------------------------------
   
   observeEvent(input[["metadata_info"]], {
     shinyWidgets::sendSweetAlert(
@@ -303,7 +304,7 @@ metadataServer <-  function(input, output, session, x){
   nodeList <- reactive({
     req(rv[["H5"]])
     out <- lapply(rv[["H5"]][["datapath"]], function(file)
-      tibble(NodeLoc = rhdf5::h5read(file, "/hydro/geometry/channel_location"),
+      tibble(NodeLoc = process_nodes(rhdf5::h5read(file, "/hydro/geometry/channel_location")),
              Index = 1:length(NodeLoc))) 
     names(out) <- rv[["H5"]][["scenario"]]
     out

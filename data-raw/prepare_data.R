@@ -9,4 +9,17 @@ usethis::use_data(cll, overwrite = TRUE)
 channels = sort(cll$channel_nu) 
 usethis::use_data(channels, overwrite = TRUE)
 
+# custom ggplot2 theme
+library(ggplot2)
+theme_mod = theme(
+  plot.title = element_text(size = 16),
+  legend.text = element_text(size = 12),
+  legend.title = element_text(size = 14),
+  strip.text.x = element_text(size = 12),
+  strip.text.y = element_text(size = 12),
+  axis.title = element_text(size = 14),
+  axis.text = element_text(size = 12)
+)
+usethis::use_data(theme_mod, overwrite = TRUE)
+
 

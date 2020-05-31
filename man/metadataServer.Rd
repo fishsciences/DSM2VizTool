@@ -12,6 +12,8 @@ metadataServer(input, output, session, x)
 \item{output}{module}
 
 \item{session}{module}
+
+\item{x}{used to separately pass session to updateNavBarPage}
 }
 \description{
 metadataServer
