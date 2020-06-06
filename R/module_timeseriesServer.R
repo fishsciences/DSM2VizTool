@@ -78,6 +78,32 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
       theme_mod
   }
   
+  calc_summary_stats <- function(array, channel.dim, channels){
+    # calculate summary stats for use in comparative analysis
+    tibble(channel = channels,
+           min = apply(array, channel.dim, min, na.rm = TRUE),
+           first.quart = apply(array, channel.dim, quantile, probs = 0.25, na.rm = TRUE),
+           median = apply(array, channel.dim, median, na.rm = TRUE),
+           mean = apply(array, channel.dim, mean, na.rm = TRUE),
+           third.quart = apply(array, channel.dim, quantile, probs = 0.75, na.rm = TRUE),
+           max = apply(array, channel.dim, max, na.rm = TRUE),
+           prop.neg = apply(array, channel.dim, function(x) sum(x < 0, na.rm = TRUE)/length(x)))
+  }
+  
+  proportion_overlap <- function(base, comp, mn, mx){
+    # calculate proportion overlap for use in comparative analysis
+    # base and comp are equal length vectors
+    # mn and mx are min and max values for that channel across all comparisons
+    if (length(base) != length(comp)) stop("base and comp are not same length")
+    bd = density(base, from = mn, to = mx) # bd = baseline density
+    cd = density(comp, from = mn, to = mx) # cd = comparison density
+    dis = MESS::auc(bd[["x"]], abs(cd[["y"]] - bd[["y"]]))/(MESS::auc(bd[["x"]], bd[["y"]]) + MESS::auc(cd[["x"]], cd[["y"]])) # dis = 0 is completely overlapping; dis = 1 is no overlap
+    return(list(po = 1 - dis, 
+                x = bd[["x"]], # base and comp have same x
+                y.base = bd[["y"]],
+                y.comp = cd[["y"]]))
+  }
+  
   # dates  ----------------------------------------------------------------
   
   datesList <- reactive({
@@ -201,6 +227,96 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   observe({
     shinyWidgets::updatePickerInput(session, "base_scenario", choices = input[["sel_scenarios"]])
+  })
+  
+  # * summary statistics  ----------------------------------------------------------------
+  
+  allLists <- reactive({
+    list("flow" = flowList(), "stage" = stageList(), "velocity" = velocityList())
+  })
+  
+  sumStats <- reactive({   # fv = flow velocity
+    al = allLists() # al = all lists
+    cl = metadata_rv[["CL"]]
+    out = list()
+    for (j in c("flow", "velocity", "stage")){
+      for (i in names(al[["flow"]])){
+        out[[j]][[i]] = calc_summary_stats(al[[j]][[i]], channel.dim = 2, cl[[i]][["Channel"]]) # 3D array; first dim is nodes; 2nd is channels; 3rd is datetimes
+      }
+    }
+    return(out)
+  })
+  
+  nonBase <- reactive({
+    # names of scenarios that were not selected as baseline scenario
+    req(input[["base_scenario"]])
+    input[["sel_scenarios"]][input[["sel_scenarios"]] != input[["base_scenario"]]]
+  })
+  
+  # run comparative analysis  ----------------------------------------------------------------
+  
+  observeEvent(input[["run_comp"]],{
+    
+    rv[["DN"]] = rv[["PO"]] = rv[["AD"]] = rv[["SS"]] = rv[["B"]] = rv[["NB"]] = NULL # clear out previous results
+    
+    withProgress(message = 'Running analysis...', value = 0,{
+      al = allLists()
+      ac = rv[["CL"]][[input[["base_scenario"]]]][["Channel"]] # ac = all channels; should be same for all scenarios
+      ss = sumStats()
+      ss.comb = list() # combine scenarios within each hydro metric (i.e., flow, velocity, stage)
+      
+      dn = list()  # dn = density
+      po = list()  # po = proportion overlap
+      ad = list()  # ad = absolute difference
+      ad.re = list() # ad.re = absolute difference rescaled to 0-1 across channels and scenarios
+      for (j in c("flow", "velocity", "stage")){
+        ss.comb[[j]] = bind_rows(ss[[j]], .id = "scenario")
+        po.base = al[[j]][[input[["base_scenario"]]]]
+        ad.base = ss[[j]][[input[["base_scenario"]]]] %>% arrange(channel)
+        dn.comp.list = list()
+        po.comp.list = list()
+        ad.comp.list = list()
+        for (i in nonBase()){
+          po.comp = al[[j]][[i]]
+          ad.comp = ss[[j]][[i]] %>% arrange(channel)
+          # summ_stats just specifies the summary statistic columns for the comparison (i.e., ignores channel column)
+          ad.comp.list[[i]] = abs(ad.comp[,summ_stats] - ad.base[,summ_stats]) %>% 
+            mutate(channel = ad.comp[["channel"]])
+          dn.chan.list = list()
+          po.chan = vector(mode = "numeric", length = length(ac))
+          for (k in 1:length(ac)){ # using channels in base scenario, but should be same in all scenarios (if filtering was correct)
+            msd.chan = filter(ss.comb[[j]], channel == ac[k])
+            mn = plyr::round_any(min(msd.chan[["min"]], na.rm = TRUE), accuracy = 0.001, f = floor)
+            mx = plyr::round_any(max(msd.chan[["max"]], na.rm = TRUE), accuracy = 0.001, f = ceiling)
+            print(po.base[1,k,])
+            po.out = proportion_overlap(po.base[1,k,], po.comp[1,k,], mn, mx)
+            dn.chan.list[[k]] = bind_rows(tibble(scenario = input[["base_scenario"]], channel = ac[k], x = po.out[["x"]], y = po.out[["y.base"]]),
+                                          tibble(scenario = i, channel = ac[k], x = po.out[["x"]], y = po.out[["y.comp"]]))
+            
+            po.chan[k] = po.out[["po"]]
+            
+            incProgress(1/(3 * length(nonBase()) * length(ac))) # 3 is for c("flow", "velocity", "stage")
+          }
+          dn.comp.list[[i]] = bind_rows(dn.chan.list)
+          po.comp.list[[i]] = tibble(channel = ac, prop.overlap = po.chan)
+        }
+        dn[[j]] = bind_rows(dn.comp.list, .id = "comp") %>% 
+          mutate(base = input[["base_scenario"]]) # adding base scenario to output for completeness, but not necessary for subsequent calcs (I think)
+        po[[j]] = bind_rows(po.comp.list, .id = "comp") %>% 
+          mutate(base = input[["base_scenario"]])
+        ad[[j]] = bind_rows(ad.comp.list, .id = "comp") %>% 
+          mutate(base = input[["base_scenario"]])
+        ad.re[[j]] = ad[[j]] %>% 
+          mutate_at(.vars = rescale.cols, .funs = rescale)
+      }
+    })
+    rv[["DN"]] = dn
+    rv[["PO"]] = po
+    rv[["AD"]] = ad.re              
+    rv[["SS"]] = ss.comb
+    rv[["B"]] = input[["base_scenario"]] # need to stash all input values at time button was clicked
+    rv[["NB"]] = nonBase()
+    updateNavbarPage(x, "nav_tabs", selected = "Comparative") # change tab after clicking on process output button
   })
   
   return(rv)

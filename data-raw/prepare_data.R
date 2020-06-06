@@ -23,3 +23,14 @@ theme_mod = theme(
 usethis::use_data(theme_mod, overwrite = TRUE)
 
 
+summ_stats = c(
+  "Min" = "min",
+  "1st quartile" = "first.quart",
+  "Median" = "median",
+  "Mean" = "mean",
+  "3rd quartile" = "third.quart",
+  "Max" = "max",
+  "Reversal" = "prop.neg"
+)
+usethis::use_data(summ_stats, overwrite = TRUE)
+
