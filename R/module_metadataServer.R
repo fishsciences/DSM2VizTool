@@ -90,13 +90,13 @@ metadataServer <-  function(input, output, session, x){
   
   datesListRead <- reactive({
     h5_df = h5Metadata()
-    out <- mapply(function(start, end, val, unit)
-      tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
-             Index = get_date_indexes(start, end, val, unit)),
-      h5_df[["start_date"]], h5_df[["end_date"]], h5_df[["interval_vals"]], h5_df[["interval_units"]],
-      SIMPLIFY = FALSE)
-    names(out) <- h5_df[["scenario"]]
-    out
+    setNames(
+      mapply(function(start, end, val, unit)
+        tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
+               Index = get_date_indexes(start, end, val, unit)),
+        h5_df[["start_date"]], h5_df[["end_date"]], h5_df[["interval_vals"]], h5_df[["interval_units"]],
+        SIMPLIFY = FALSE),
+      h5_df[["scenario"]])
   })
   
   datesListReadSub <- reactive({
@@ -172,11 +172,11 @@ metadataServer <-  function(input, output, session, x){
   
   channelList <- reactive({
     req(rv[["H5"]])
-    out <- lapply(rv[["H5"]][["datapath"]], function(file)
-      tibble(Channel = rhdf5::h5read(file, "/hydro/geometry/channel_number"),
-             Index = 1:length(Channel))) 
-    names(out) <- rv[["H5"]][["scenario"]]
-    out
+    setNames(
+      lapply(rv[["H5"]][["datapath"]], function(file)
+        tibble(Channel = rhdf5::h5read(file, "/hydro/geometry/channel_number"),
+               Index = 1:length(Channel))),
+      rv[["H5"]][["scenario"]])
   })
   
   channelTibble <- reactive({
@@ -223,11 +223,11 @@ metadataServer <-  function(input, output, session, x){
   
   nodeList <- reactive({
     req(rv[["H5"]])
-    out <- lapply(rv[["H5"]][["datapath"]], function(file)
-      tibble(NodeLoc = process_nodes(rhdf5::h5read(file, "/hydro/geometry/channel_location")),
-             Index = 1:length(NodeLoc))) 
-    names(out) <- rv[["H5"]][["scenario"]]
-    out
+    setNames(
+      lapply(rv[["H5"]][["datapath"]], function(file)
+        tibble(NodeLoc = process_nodes(rhdf5::h5read(file, "/hydro/geometry/channel_location")),
+               Index = 1:length(NodeLoc))),
+      rv[["H5"]][["scenario"]])
   })
   
   # read data ----------------------------------------------------------------

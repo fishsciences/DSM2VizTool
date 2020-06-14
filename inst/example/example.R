@@ -17,12 +17,13 @@ h5Metadata <- h5_read_attr(rv[["H5"]]) %>%
          end_date = calc_end_date(start_date, num_intervals, 
                                   interval_vals, interval_units))
 
-datesListRead <- mapply(function(start, end, val, unit)
-  tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
-         Index = get_date_indexes(start, end, val, unit)),
-  h5Metadata[["start_date"]], h5Metadata[["end_date"]], h5Metadata[["interval_vals"]], h5Metadata[["interval_units"]],
-  SIMPLIFY = FALSE)
-names(datesListRead) <- h5Metadata[["scenario"]]
+datesListRead <- setNames(
+  mapply(function(start, end, val, unit)
+    tibble(Date = seq(from = start, to = end, by = paste(val, unit)),
+           Index = get_date_indexes(start, end, val, unit)),
+    h5Metadata[["start_date"]], h5Metadata[["end_date"]], h5Metadata[["interval_vals"]], h5Metadata[["interval_units"]],
+    SIMPLIFY = FALSE),
+  h5Metadata[["scenario"]])
 
 drr <- lubridate::ymd_hms(c("2007-06-01 00:00:00", "2007-06-10 23:59:59"))
 
@@ -42,10 +43,11 @@ intervals <- h5Metadata
 
 intervalSub <- filter(intervals, num_intervals_in_range > 1)
 
-channelList <- lapply(rv[["H5"]][["datapath"]], function(file)
-  tibble(Channel = rhdf5::h5read(file, "/hydro/geometry/channel_number"),
-         Index = 1:length(Channel))) 
-names(channelList) <- rv[["H5"]][["scenario"]]
+channelList <- setNames(
+  lapply(rv[["H5"]][["datapath"]], function(file)
+    tibble(Channel = rhdf5::h5read(file, "/hydro/geometry/channel_number"),
+           Index = 1:length(Channel))), 
+  rv[["H5"]][["scenario"]])
 
 channelTibble <- bind_rows(channelList, .id = "Scenario") %>% 
   # exclude scenarios that will be dropped when reading data (b/c not enough data)
@@ -63,10 +65,11 @@ allCommonChannels <-channelTibbleWide %>%
   filter(Total == length(intervalSub[["scenario"]]) + 1) %>% 
   pull(Channel)
 
-nodeList <- lapply(rv[["H5"]][["datapath"]], function(file)
-  tibble(NodeLoc = process_nodes(rhdf5::h5read(file, "/hydro/geometry/channel_location")),
-         Index = 1:length(NodeLoc))) 
-names(nodeList) <- rv[["H5"]][["scenario"]]
+nodeList <- setNames(
+  lapply(rv[["H5"]][["datapath"]], function(file)
+    tibble(NodeLoc = process_nodes(rhdf5::h5read(file, "/hydro/geometry/channel_location")),
+           Index = 1:length(NodeLoc))),
+  rv[["H5"]][["scenario"]])
 
 
 rv[["H5META"]] <- h5Metadata
