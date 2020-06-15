@@ -173,7 +173,7 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   })
   
   sumStats <- reactive({
-    lapply(allLists, function(al) 
+    lapply(allLists(), function(al) 
       mapply(function(al_sub, cl) calc_summary_stats(al_sub, channel.dim = 2, cl[["Channel"]]),
              al, metadata_rv[["CL"]], SIMPLIFY = FALSE))
   })
