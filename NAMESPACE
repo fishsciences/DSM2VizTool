@@ -2,6 +2,7 @@
 
 export(calc_end_date)
 export(calc_summary_stats)
+export(comparativeUI)
 export(get_date_indexes)
 export(get_interval_number)
 export(h5_read)

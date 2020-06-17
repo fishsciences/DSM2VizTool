@@ -14,7 +14,7 @@ app_ui <- function(request) {
       id = "nav_tabs",
       tabPanel("Metadata", DSM2VizTool::metadataUI("metadataUI")),
       tabPanel("Time Series", DSM2VizTool::timeseriesUI("timeseriesUI")),
-      tabPanel("Comparative"),
+      tabPanel("Comparative", DSM2VizTool::comparativeUI("comparativeUI")),
       tabPanel("About", includeMarkdown(app_sys("app/www/About.md")))
     )
   )
