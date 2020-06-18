@@ -1,0 +1,4 @@
+/* fill map to height of container;  https://stackoverflow.com/questions/36469631/how-to-get-leaflet-for-r-use-100-of-shiny-dashboard-height/36471739#36471739 
+#comparativeUI-Map {height: calc(100vh - 80px) !important;}*/
+/* eliminate blinking effect in densityPlot (which is a shiny feature, not a bug, but I think removing it is useful in this case) */
+#comparativeUI-densityPlot.recalculating {opacity: 1}

@@ -16,6 +16,8 @@ timeseriesServer(input, output, session, x, metadata_rv)
 \item{x}{used to separately pass session to updateNavBarPage}
 
 \item{metadata_rv}{reactive values returned from metadata tab}
+
+\item{comparative_results}{results from comparative tab}
 }
 \description{
 timeseriesServer

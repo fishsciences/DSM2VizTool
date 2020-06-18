@@ -5,6 +5,7 @@
 #' @param session      module
 #' @param x            used to separately pass session to updateNavBarPage
 #' @param metadata_rv  reactive values returned from metadata tab
+#' @param comparative_results  results from comparative tab
 #'
 #' @import dplyr
 #' @import ggplot2
@@ -16,8 +17,8 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   # reactive values ----------------------------------------------------------------
   # AD = absolute difference; PO = proportion overlap; DN = density; SS = summary stats; 
-  # B = base scenario; NB = non-base scenarios; DC = deleted channels 
-  rv <- reactiveValues(AD = NULL, PO = NULL, DN = NULL, SS = NULL, B = NULL, NB = NULL, DC = NULL) 
+  # B = base scenario; NB = non-base scenarios
+  rv <- reactiveValues(AD = NULL, PO = NULL, DN = NULL, SS = NULL, B = NULL, NB = NULL) 
   
   # info alert  ----------------------------------------------------------------
   observeEvent(input[["ts_info"]], {
@@ -118,7 +119,6 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
     shinyjs::toggle("ts_info", condition = cond)
     shinyjs::toggle("ts_plots", condition = cond)
     shinyjs::toggle("ts_channel", condition = cond)
-    shinyjs::toggle("map_channel", condition = cond)
     shinyjs::toggle("date_range_viz", condition = cond)
     shinyjs::toggle("base_scenario", condition = cond)
     shinyjs::toggle("sel_scenarios", condition = cond)
@@ -140,14 +140,8 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
   
   observe({
     req(metadata_rv[["ACC"]])
-    acc = metadata_rv[["ACC"]][!(metadata_rv[["ACC"]] %in% metadata_rv[["DC"]])]
-    shinyWidgets::updatePickerInput(session, "ts_channel", choices = acc, selected = input[["map_channel"]])
-  })
-  
-  observe({
-    req(metadata_rv[["ACC"]])
-    acc = metadata_rv[["ACC"]][!(metadata_rv[["ACC"]] %in% metadata_rv[["DC"]])]
-    shinyWidgets::updatePickerInput(session, "map_channel", choices = acc, selected = input[["ts_channel"]])
+    # acc = metadata_rv[["ACC"]][!(metadata_rv[["ACC"]] %in% metadata_rv[["DC"]])]
+    shinyWidgets::updatePickerInput(session, "ts_channel", choices = metadata_rv[["ACC"]])
   })
   
   observe({
@@ -166,7 +160,7 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
     shinyWidgets::updatePickerInput(session, "base_scenario", choices = input[["sel_scenarios"]])
   })
   
-  # * summary statistics  ----------------------------------------------------------------
+  # summary statistics  ----------------------------------------------------------------
   
   allLists <- reactive({
     list("flow" = flowList(), "stage" = stageList(), "velocity" = velocityList())
@@ -195,7 +189,6 @@ timeseriesServer <-  function(input, output, session, x, metadata_rv){
       ac = metadata_rv[["CL"]][[input[["base_scenario"]]]][["Channel"]] # ac = all channels; should be same for all scenarios
       ss = sumStats()
       ss.comb = list() # combine scenarios within each hydro metric (i.e., flow, velocity, stage)
-      
       dn = list()  # dn = density
       po = list()  # po = proportion overlap
       ad = list()  # ad = absolute difference

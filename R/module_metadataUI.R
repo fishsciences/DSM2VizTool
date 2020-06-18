@@ -10,7 +10,6 @@ metadataUI <- function(id){
   tagList(
     sidebarLayout(
       sidebarPanel(
-        tags$style(HTML("hr {border-top: 1px solid #b5b5b5;}")),
         p(align = "center", 
           shinyjs::hidden(
             actionButton(

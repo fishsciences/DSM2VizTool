@@ -11,7 +11,7 @@ comparativeUI <- function(id){
     # map fills the screen and absolutePanels are placed on top
     leaflet::leafletOutput(ns('Map')),
     
-    # * map tools  ----------------------------------------------------------------
+    # map tools  ----------------------------------------------------------------
     # top left
     absolutePanel(
       top = 80,
@@ -28,7 +28,7 @@ comparativeUI <- function(id){
           condition = 'input.map_tools',
           ns = ns,
           selectInput(
-            inputId = "map_back",
+            inputId = ns("map_back"),
             width = 150,
             label = "Background map",
             choices = c(
@@ -82,7 +82,7 @@ comparativeUI <- function(id){
       )
     ),
     
-    # * main panel ----------------------------------------------------------------
+    # main panel ----------------------------------------------------------------
     # top right
     absolutePanel(
       top = 80,
@@ -124,7 +124,7 @@ comparativeUI <- function(id){
       )
     ),
     
-    # * density plot ----------------------------------------------------------------
+    # density plot ----------------------------------------------------------------
     absolutePanel(
       bottom = -105,
       left = 20,
@@ -144,7 +144,7 @@ comparativeUI <- function(id){
       )
     ),
     
-    # * info buttons ----------------------------------------------------------------
+    # info buttons ----------------------------------------------------------------
     
     absolutePanel(
       top = 85,

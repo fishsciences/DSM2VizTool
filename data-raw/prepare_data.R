@@ -38,4 +38,3 @@ usethis::use_data(summ_stats, overwrite = TRUE)
 rescale_cols = c("min", "first.quart", "median", "mean", "third.quart", "max")
 usethis::use_data(rescale_cols, overwrite = TRUE)
 
-
